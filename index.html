@@ -48,11 +48,7 @@
 
     const CHANGELOG_URL = 'https://raw.githubusercontent.com/dragonal59/DarkOrbit-Stats-Tracker-Download/master/changelog.json';
     const DOWNLOAD_PATH = 'https://github.com/dragonal59/DarkOrbit-Stats-Tracker-Download/releases/download/v2.1.0/DOStatsTracker-Setup.exe';
-    // Base path pour les images d'aperçu : gère le cas où index.html est servi
-    // soit depuis /landing/index.html, soit depuis / (root) avec /landing/pictures.
-    const PICTURES_BASE = window.location.pathname.includes('/landing/')
-      ? 'pictures/'
-      : 'landing/pictures/';
+    const PICTURES_BASE = './pictures/';
 
     const i18n = {
       fr: {
