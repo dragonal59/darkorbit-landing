@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DO Stats Tracker — Le tracker de référence pour DarkOrbit</title>
+  <meta name="description" content="Classements en temps réel, événements, alertes booster et suivi personnel pour DarkOrbit. Passez PRO pour un accès illimité.">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <link rel="icon" type="image/png" href="./icon_app.png">
+  <link rel="shortcut icon" href="./favicon.ico">
+  <link rel="apple-touch-icon" href="./icon_app.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#0a0a0f',
+            accent: '#4f8ef7',
+            violet: '#7c5cbf',
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    html { overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar { display: none; }
+    body { font-family: 'Inter', sans-serif; background-color: #0a0a0f; }
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .screenshot-placeholder { background: linear-gradient(135deg, rgba(79,142,247,0.08) 0%, rgba(124,92,191,0.08) 100%); }
+  </style>
+</head>
+<body class="text-gray-200 antialiased">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useRef } = React;
+
+    const CHANGELOG_URL = 'https://raw.githubusercontent.com/dragonal59/DarkOrbit-Stats-Tracker-Download/master/changelog.json';
+    const DOWNLOAD_PATH = 'https://github.com/dragonal59/DarkOrbit-Stats-Tracker-Download/releases/download/v2.1.0/DOStatsTracker-Setup.exe';
+    // Base path pour les images d'aperçu : gère le cas où index.html est servi
+    // soit depuis /landing/index.html, soit depuis / (root) avec /landing/pictures.
+    const PICTURES_BASE = window.location.pathname.includes('/landing/')
+      ? 'pictures/'
+      : 'landing/pictures/';
+
+    const i18n = {
+      fr: {
+        tagline: 'Vos stats DarkOrbit, enfin sous contrôle.',
+        heroSub: 'Classements live, événements en cours, comparaison entre pilotes et alertes booster — tout dans une seule app, pour jouer plus malin.',
+        navFeatures: 'Fonctionnalités',
+        navComparatif: 'Free vs PRO',
+        navChangelog: 'Changelog',
+        navDownload: 'Télécharger',
+        download: 'Télécharger',
+        downloadTitle: 'Prêt à décoller ?',
+        downloadSubtitle: 'Téléchargez DO Stats Tracker et optimisez votre expérience DarkOrbit.',
+        downloadVersion: 'Version',
+        downloadPlatform: 'Windows 10/11 — 64 bits',
+        windows: 'Windows',
+        sectionFeatures: 'Fonctionnalités',
+        sectionFeaturesIntro: 'Tout ce dont vous avez besoin pour suivre votre progression et celle de la galaxie.',
+        feature1Title: 'Hall of Fame (classements)',
+        feature1Desc: 'Scraping des classements Honneur, XP, Top User, Aliens et Vaisseaux sur 24 serveurs internationaux. Données mises à jour régulièrement.',
+        feature2Title: 'Profils & suivi joueurs',
+        feature2Desc: 'Consultez les stats des pilotes (grade, kills, portes galactiques) et suivez leur évolution dans le temps.',
+        feature3Title: 'Comparaison entre joueurs',
+        feature3Desc: 'Comparez côte à côte les statistiques de plusieurs pilotes pour analyser les écarts et les tendances.',
+        feature4Title: 'Sidebar événements',
+        feature4Desc: 'Événements DarkOrbit en cours et à venir, avec timers et descriptions, directement dans l’app.',
+        feature5Title: 'Notifications',
+        feature5Desc: 'Alertes booster, fin de collecte ou rappels personnalisés pour ne rien rater (selon votre offre).',
+        sectionApercu: 'Aperçu de l’application',
+        screenshotDashboard: 'Dashboard principal',
+        screenshotHoF: 'Hall of Fame / Classements',
+        screenshotComparaison: 'Comparaison entre joueurs',
+        screenshotSidebar: 'Sidebar événements',
+        sectionComparatif: 'Free vs PRO',
+        sectionComparatifIntro: 'Choisissez l’offre qui correspond à votre usage. Passez en PRO pour débloquer tout le potentiel du tracker.',
+        planFree: 'FREE',
+        planPro: 'PRO',
+        cmpServers: 'Serveurs accessibles',
+        cmpServersFree: 'Serveurs restreints',
+        cmpServersPro: '24 serveurs internationaux',
+        cmpScraping: 'Scraping classements',
+        cmpScrapingFree: 'Limité',
+        cmpScrapingPro: 'Illimité',
+        cmpProfiles: 'Profils joueurs / DOStats',
+        cmpProfilesFree: 'Consultation limitée',
+        cmpProfilesPro: 'Accès complet',
+        cmpCompare: 'Comparaison joueurs',
+        cmpCompareFree: 'Basique',
+        cmpComparePro: 'Complet',
+        cmpEvents: 'Événements & sidebar',
+        cmpEventsFree: 'Oui',
+        cmpEventsPro: 'Oui',
+        cmpSupport: 'Support',
+        cmpSupportFree: 'Communauté',
+        cmpSupportPro: 'Prioritaire',
+        sectionChangelog: 'Changelog',
+        sectionChangelogIntro: 'Dernières évolutions de l’application.',
+        footerDisclaimer: "DO Stats Tracker n'est pas affilié à DarkOrbit ni à Bigpoint. DarkOrbit est une marque de Bigpoint GmbH.",
+      },
+      en: {
+        tagline: 'Your DarkOrbit stats, finally under control.',
+        heroSub: 'Live rankings, current events, pilot comparison and booster alerts — all in one app, so you can play smarter.',
+        navFeatures: 'Features',
+        navComparatif: 'Free vs PRO',
+        navChangelog: 'Changelog',
+        navDownload: 'Download',
+        download: 'Download',
+        downloadTitle: 'Ready to launch?',
+        downloadSubtitle: 'Download DO Stats Tracker and optimize your DarkOrbit experience.',
+        downloadVersion: 'Version',
+        downloadPlatform: 'Windows 10/11 — 64-bit',
+        windows: 'Windows',
+        sectionFeatures: 'Features',
+        sectionFeaturesIntro: 'Everything you need to track your progress and the galaxy\'s.',
+        feature1Title: 'Hall of Fame (rankings)',
+        feature1Desc: 'Scraping of Honor, XP, Top User, Aliens and Ships rankings across 24 international servers. Data updated regularly.',
+        feature2Title: 'Player profiles & tracking',
+        feature2Desc: 'View pilot stats (rank, kills, galaxy gates) and track their evolution over time.',
+        feature3Title: 'Player comparison',
+        feature3Desc: 'Compare multiple pilots\' statistics side by side to analyze gaps and trends.',
+        feature4Title: 'Events sidebar',
+        feature4Desc: 'Current and upcoming DarkOrbit events with timers and descriptions, right in the app.',
+        feature5Title: 'Notifications',
+        feature5Desc: 'Booster alerts, collection completion or custom reminders so you never miss a beat (depending on your plan).',
+        sectionApercu: 'Application overview',
+        screenshotDashboard: 'Main dashboard',
+        screenshotHoF: 'Hall of Fame / Rankings',
+        screenshotComparaison: 'Player comparison',
+        screenshotSidebar: 'Events sidebar',
+        sectionComparatif: 'Free vs PRO',
+        sectionComparatifIntro: 'Choose the plan that fits your use. Go PRO to unlock the full potential of the tracker.',
+        planFree: 'FREE',
+        planPro: 'PRO',
+        cmpServers: 'Accessible servers',
+        cmpServersFree: 'Restricted servers',
+        cmpServersPro: '24 international servers',
+        cmpScraping: 'Ranking scraping',
+        cmpScrapingFree: 'Limited',
+        cmpScrapingPro: 'Unlimited',
+        cmpProfiles: 'Player profiles / DOStats',
+        cmpProfilesFree: 'Limited access',
+        cmpProfilesPro: 'Full access',
+        cmpCompare: 'Player comparison',
+        cmpCompareFree: 'Basic',
+        cmpComparePro: 'Full',
+        cmpEvents: 'Events & sidebar',
+        cmpEventsFree: 'Yes',
+        cmpEventsPro: 'Yes',
+        cmpSupport: 'Support',
+        cmpSupportFree: 'Community',
+        cmpSupportPro: 'Priority',
+        sectionChangelog: 'Changelog',
+        sectionChangelogIntro: 'Latest application updates.',
+        footerDisclaimer: 'DO Stats Tracker is not affiliated with DarkOrbit or Bigpoint. DarkOrbit is a trademark of Bigpoint GmbH.',
+      },
+    };
+
+    const STORAGE_KEY = 'dostats-landing-lang';
+
+    function useIntersectionObserver(threshold = 0.1) {
+      const ref = useRef(null);
+      const [visible, setVisible] = useState(false);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(
+          ([e]) => { if (e.isIntersecting) setVisible(true); },
+          { threshold }
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+      }, []);
+      return [ref, visible];
+    }
+
+    function Header({ t, lang, setLang }) {
+      return (
+        <header className="fixed top-0 left-0 right-0 z-50 bg-dark/90 backdrop-blur-sm border-b border-gray-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+            <a href="#" className="text-xl font-bold">
+              <span className="text-accent">DO</span>
+              <span className="text-white"> Stats Tracker</span>
+            </a>
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#features" className="text-gray-400 hover:text-white transition text-sm font-medium">{t.navFeatures}</a>
+              <a href="#comparatif" className="text-gray-400 hover:text-white transition text-sm font-medium">{t.navComparatif}</a>
+              <a href="#changelog" className="text-gray-400 hover:text-white transition text-sm font-medium">{t.navChangelog}</a>
+              <a href="#download" className="text-gray-400 hover:text-white transition text-sm font-medium">{t.navDownload}</a>
+            </nav>
+            <div className="flex items-center gap-4">
+              <div className="flex rounded-lg bg-gray-800/80 p-1">
+                <button
+                  onClick={() => setLang('fr')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${lang === 'fr' ? 'bg-accent text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  FR
+                </button>
+                <button
+                  onClick={() => setLang('en')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${lang === 'en' ? 'bg-accent text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  EN
+                </button>
+              </div>
+              <a
+                href={DOWNLOAD_PATH}
+                download
+                className="px-4 py-2 bg-accent hover:bg-violet text-white font-semibold rounded-lg transition"
+              >
+                {t.download}
+              </a>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function Hero({ t, sectionRef, visible }) {
+      return (
+        <section ref={sectionRef} className={`pt-32 pb-20 px-4 sm:px-6 ${visible ? 'fade-in visible' : 'fade-in'}`}>
+          <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+                {t.tagline}
+              </h1>
+              <p className="text-xl text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0">
+                {t.heroSub}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                <a
+                  href={DOWNLOAD_PATH}
+                  download
+                  className="px-8 py-4 bg-accent hover:bg-accent/90 text-white text-lg font-semibold rounded-xl transition shadow-lg shadow-accent/25"
+                >
+                  {t.download}
+                </a>
+                <span className="text-sm text-gray-500 px-4 py-2 bg-gray-800/50 rounded-lg">
+                  {t.windows}
+                </span>
+              </div>
+            </div>
+            <div className="flex-1 w-full max-w-lg">
+              <div className="screenshot-zone screenshot-dashboard aspect-video border border-gray-700 rounded-2xl flex items-center justify-center ring-1 ring-violet/20 overflow-hidden">
+                <img src={PICTURES_BASE + 'vitrine_image_1.png'} alt={t.screenshotDashboard} className="screenshot-img w-full h-full object-cover" />
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function FeatureCard({ icon, title, desc, details, cardRef, visible }) {
+      return (
+        <div ref={cardRef} className={`p-6 bg-gray-800/30 border border-gray-700/50 rounded-xl hover:border-accent/30 transition ${visible ? 'fade-in visible' : 'fade-in'}`}>
+          <div className="text-3xl mb-4">{icon}</div>
+          <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+          <p className="text-gray-400 text-sm leading-relaxed mb-2">{desc}</p>
+          {details && (
+            <p className="text-gray-500 text-xs leading-relaxed">
+              {details}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    function Features({ t }) {
+      const [ref1, v1] = useIntersectionObserver();
+      const [ref2, v2] = useIntersectionObserver();
+      const [ref3, v3] = useIntersectionObserver();
+      const [ref4, v4] = useIntersectionObserver();
+      const [ref5, v5] = useIntersectionObserver();
+      const features = [
+        {
+          icon: '🏆',
+          title: t.feature1Title,
+          desc: t.feature1Desc,
+          details: 'Le tracker enregistre régulièrement les classements Honneur, XP, Top User, Aliens détruits et Vaisseaux détruits sur chaque serveur. Vous pouvez remonter dans le temps, comparer les positions et visualiser votre progression dans le Hall of Fame sans dépendre du site officiel.',
+          ref: ref1,
+          visible: v1
+        },
+        {
+          icon: '👤',
+          title: t.feature2Title,
+          desc: t.feature2Desc,
+          details: 'Chaque profil joueur regroupe les stats DOStats (grade, points de grade estimés, temps de jeu, NPC/Vaisseaux détruits, Galaxy Gates, etc.) et les sessions que vous avez scannées. Vous pouvez consulter vos propres stats ou celles d’autres pilotes, et suivre leur évolution dans le temps.',
+          ref: ref2,
+          visible: v2
+        },
+        {
+          icon: '⚖️',
+          title: t.feature3Title,
+          desc: t.feature3Desc,
+          details: 'Choisissez plusieurs pilotes et comparez leurs points d’expérience, d’honneur, de grade et leurs performances PVE/PVP sur des périodes identiques. Le comparateur met en avant les écarts de progression pour identifier rapidement qui progresse le plus vite et sur quels axes.',
+          ref: ref3,
+          visible: v3
+        },
+        {
+          icon: '📅',
+          title: t.feature4Title,
+          desc: t.feature4Desc,
+          details: 'La sidebar événements affiche en continu les événements DarkOrbit détectés (Helix, Honneur/XP, Galaxy Gates, Battle Pass, etc.), avec compte à rebours, description et filtres. Vous voyez d’un coup d’œil ce qui est en cours ou à venir sur votre serveur.',
+          ref: ref4,
+          visible: v4
+        },
+        {
+          icon: '🔔',
+          title: t.feature5Title,
+          desc: t.feature5Desc,
+          details: 'Le tracker peut vous avertir lorsqu’un booster 50% est actif, quand un scrap automatique est terminé ou pour d’autres actions importantes. Les notifications Windows sont intégrées à l’app pour vous prévenir même si la fenêtre est minimisée (selon vos permissions/badge).',
+          ref: ref5,
+          visible: v5
+        },
+      ];
+      return (
+        <section id="features" className="py-20 px-4 sm:px-6 scroll-mt-20">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-4">{t.sectionFeatures}</h2>
+            <p className="text-gray-400 text-center max-w-2xl mx-auto mb-12">{t.sectionFeaturesIntro}</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.slice(0, 3).map((f, i) => (
+                <FeatureCard key={i} {...f} />
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-6 mt-6 max-w-4xl mx-auto">
+              {features.slice(3, 5).map((f, i) => (
+                <FeatureCard key={i + 3} {...f} />
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Screenshots({ t }) {
+      const [ref, visible] = useIntersectionObserver();
+      const [lightboxIndex, setLightboxIndex] = useState(null);
+      const items = [
+        { id: 'dashboard', label: t.screenshotDashboard },
+        { id: 'hof', label: t.screenshotHoF },
+        { id: 'comparaison', label: t.screenshotComparaison },
+        { id: 'sidebar', label: t.screenshotSidebar },
+      ];
+      const sources = [
+        PICTURES_BASE + 'vitrine_image_1.png',
+        PICTURES_BASE + 'vitrine_image_2.png',
+        PICTURES_BASE + 'vitrine_image_3.png',
+        PICTURES_BASE + 'vitrine_image_4.png',
+      ];
+
+      const openLightbox = (index) => {
+        setLightboxIndex(index);
+      };
+
+      const closeLightbox = () => {
+        setLightboxIndex(null);
+      };
+
+      const showPrev = (e) => {
+        e.stopPropagation();
+        setLightboxIndex((prev) => {
+          if (prev === null) return prev;
+          return (prev + items.length - 1) % items.length;
+        });
+      };
+
+      const showNext = (e) => {
+        e.stopPropagation();
+        setLightboxIndex((prev) => {
+          if (prev === null) return prev;
+          return (prev + 1) % items.length;
+        });
+      };
+
+      return (
+        <section ref={ref} className={`py-16 px-4 sm:px-6 ${visible ? 'fade-in visible' : 'fade-in'}`}>
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-8">{t.sectionApercu}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {items.map((item, index) => {
+                const src = sources[index];
+                return (
+                  <div
+                    key={item.id}
+                    className={`screenshot-zone screenshot-${item.id} aspect-video border border-gray-700 rounded-xl flex items-center justify-center ring-1 ring-violet/20 overflow-hidden cursor-pointer`}
+                    onClick={() => openLightbox(index)}
+                  >
+                    <img src={src} alt={item.label} className="screenshot-img w-full h-full object-cover" />
+                  </div>
+                );
+              })}
+            </div>
+            {lightboxIndex !== null && (
+              <div
+                className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+                onClick={closeLightbox}
+              >
+                <button
+                  type="button"
+                  className="absolute top-6 right-8 text-white text-2xl font-bold hover:text-gray-300"
+                  aria-label="Fermer"
+                  onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+                >
+                  ×
+                </button>
+                <button
+                  type="button"
+                  className="absolute left-4 md:left-10 text-white text-3xl font-bold px-3 py-2 hover:text-gray-300"
+                  aria-label="Précédent"
+                  onClick={showPrev}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="absolute right-4 md:right-10 text-white text-3xl font-bold px-3 py-2 hover:text-gray-300"
+                  aria-label="Suivant"
+                  onClick={showNext}
+                >
+                  ›
+                </button>
+                <div className="max-w-5xl w-full px-4">
+                  <img
+                    src={sources[lightboxIndex]}
+                    alt={items[lightboxIndex].label}
+                    className="w-full max-h-[80vh] object-contain rounded-lg border border-gray-700"
+                  />
+                  <p className="mt-4 text-center text-sm text-gray-300">
+                    {items[lightboxIndex].label}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    function ComparatifTable({ t }) {
+      const [ref, visible] = useIntersectionObserver();
+      const rows = [
+        [t.cmpServers, t.cmpServersFree, t.cmpServersPro],
+        [t.cmpScraping, t.cmpScrapingFree, t.cmpScrapingPro],
+        [t.cmpProfiles, t.cmpProfilesFree, t.cmpProfilesPro],
+        [t.cmpCompare, t.cmpCompareFree, t.cmpComparePro],
+        [t.cmpEvents, t.cmpEventsFree, t.cmpEventsPro],
+        [t.cmpSupport, t.cmpSupportFree, t.cmpSupportPro],
+      ];
+      return (
+        <section id="comparatif" ref={ref} className={`py-20 px-4 sm:px-6 bg-gray-900/50 scroll-mt-20 ${visible ? 'fade-in visible' : 'fade-in'}`}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-4">{t.sectionComparatif}</h2>
+            <p className="text-gray-400 text-center mb-10">{t.sectionComparatifIntro}</p>
+            <div className="overflow-x-auto rounded-xl border border-gray-700">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-800/80 border-b border-gray-700">
+                    <th className="px-4 py-4 text-gray-300 font-semibold"></th>
+                    <th className="px-4 py-4 text-gray-400 font-semibold">{t.planFree}</th>
+                    <th className="px-4 py-4 text-accent font-semibold">{t.planPro}</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {rows.map((row, i) => (
+                    <tr key={i} className="border-b border-gray-800 hover:bg-gray-800/30 transition">
+                      <td className="px-4 py-3 text-gray-300 font-medium">{row[0]}</td>
+                      <td className="px-4 py-3 text-gray-400">{row[1]}</td>
+                      <td className="px-4 py-3 text-gray-200">{row[2]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Changelog({ t, versions, loading }) {
+      const [ref, visible] = useIntersectionObserver();
+      const [modalEntry, setModalEntry] = useState(null);
+      const entries = Array.isArray(versions) ? versions : [];
+      const renderChanges = (entry) => {
+        if (!entry || !entry.changes) return null;
+        const c = entry.changes;
+        return (
+          <div className="space-y-4 text-sm">
+            {c.nouveautés && c.nouveautés.length > 0 && (
+              <div>
+                <p className="font-semibold text-accent mb-2">Nouveautés</p>
+                <ul className="list-disc list-inside text-gray-400 space-y-1">{c.nouveautés.map((s, j) => <li key={j}>{s}</li>)}</ul>
+              </div>
+            )}
+            {c.améliorations && c.améliorations.length > 0 && (
+              <div>
+                <p className="font-semibold text-accent mb-2">Améliorations</p>
+                <ul className="list-disc list-inside text-gray-400 space-y-1">{c.améliorations.map((s, j) => <li key={j}>{s}</li>)}</ul>
+              </div>
+            )}
+            {c.corrections && c.corrections.length > 0 && (
+              <div>
+                <p className="font-semibold text-accent mb-2">Corrections</p>
+                <ul className="list-disc list-inside text-gray-400 space-y-1">{c.corrections.map((s, j) => <li key={j}>{s}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        );
+      };
+      return (
+        <>
+          <section id="changelog" ref={ref} className={`py-20 px-4 sm:px-6 scroll-mt-20 ${visible ? 'fade-in visible' : 'fade-in'}`}>
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-4">{t.sectionChangelog}</h2>
+              <p className="text-gray-400 text-center mb-10">{t.sectionChangelogIntro}</p>
+              {loading && <p className="text-center text-gray-500">Chargement…</p>}
+              {!loading && entries.length === 0 && <p className="text-center text-gray-500">Aucune version.</p>}
+              <div className="space-y-4">
+                {entries.map((entry, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setModalEntry(entry)}
+                    className="w-full text-left bg-gray-800/30 border border-gray-700/50 rounded-xl p-4 hover:border-accent/40 transition flex flex-wrap items-center gap-3"
+                  >
+                    <span className="text-lg font-bold text-accent">v{entry.version}</span>
+                    <span className="text-gray-500 text-sm">{entry.date}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${entry.type === 'critical' ? 'bg-red-600 text-white' : 'bg-accent/80 text-white'}`}>
+                      {entry.type === 'critical' ? 'CRITIQUE' : 'STANDARD'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+          {modalEntry && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setModalEntry(null)}>
+              <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-lg w-full max-h-[85vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-bold text-white">Version {modalEntry.version}</h3>
+                  <button type="button" onClick={() => setModalEntry(null)} className="text-gray-400 hover:text-white">Fermer</button>
+                </div>
+                <p className="text-gray-500 text-sm mb-4">{modalEntry.date}</p>
+                {renderChanges(modalEntry)}
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    function Download({ t, sectionRef, visible, currentVersion }) {
+      const ver = currentVersion ? 'v' + String(currentVersion).replace(/^v/, '') : 'v2.1.0';
+      return (
+        <section id="download" ref={sectionRef} className={`py-20 px-4 sm:px-6 bg-gray-900/50 scroll-mt-20 ${visible ? 'fade-in visible' : 'fade-in'}`}>
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t.downloadTitle}</h2>
+            <p className="text-gray-400 mb-8">{t.downloadSubtitle}</p>
+            <a
+              href={DOWNLOAD_PATH}
+              download
+              className="inline-block px-10 py-4 bg-accent hover:bg-accent/90 text-white text-lg font-semibold rounded-xl transition shadow-lg shadow-accent/25"
+            >
+              {t.download}
+            </a>
+            <p className="mt-4 text-sm text-gray-400">
+              {t.downloadVersion} <span className="text-white font-medium">{ver}</span>
+            </p>
+            <p className="mt-2 text-sm text-gray-500">{t.downloadPlatform}</p>
+          </div>
+        </section>
+      );
+    }
+
+    function Footer({ t }) {
+      return (
+        <footer className="py-8 px-4 sm:px-6 border-t border-gray-800">
+          <div className="max-w-6xl mx-auto text-center text-sm text-gray-500">
+            <p className="mb-2">{t.footerDisclaimer}</p>
+            <p>© {new Date().getFullYear()} DO Stats Tracker</p>
+          </div>
+        </footer>
+      );
+    }
+
+    function App() {
+      const [lang, setLang] = useState(() => localStorage.getItem(STORAGE_KEY) || 'fr');
+      const [changelogVersions, setChangelogVersions] = useState([]);
+      const [changelogLoading, setChangelogLoading] = useState(true);
+      const t = i18n[lang] || i18n.fr;
+
+      useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, lang);
+      }, [lang]);
+
+      useEffect(() => {
+        fetch(CHANGELOG_URL)
+          .then(r => r.json())
+          .then(data => {
+            const versions = (data && data.versions) ? data.versions : [];
+            setChangelogVersions(versions);
+          })
+          .catch(() => setChangelogVersions([]))
+          .finally(() => setChangelogLoading(false));
+      }, []);
+
+      const currentVersion = changelogVersions[0] ? changelogVersions[0].version : null;
+      const [heroRef, heroVisible] = useIntersectionObserver();
+      const [downloadRef, downloadVisible] = useIntersectionObserver();
+
+      return (
+        <>
+          <Header t={t} lang={lang} setLang={setLang} />
+          <main className="min-h-screen">
+            <Hero t={t} sectionRef={heroRef} visible={heroVisible} />
+            <Features t={t} />
+            <Screenshots t={t} />
+            <ComparatifTable t={t} />
+            <Changelog t={t} versions={changelogVersions} loading={changelogLoading} />
+            <Download t={t} sectionRef={downloadRef} visible={downloadVisible} currentVersion={currentVersion} />
+          </main>
+          <Footer t={t} />
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
