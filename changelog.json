@@ -1,71 +1,7 @@
 {
   "versions": [
     {
-      "version": "2.5.4",
-      "date": "2026-03-21",
-      "type": "hotfix",
-      "changes": {
-        "nouveautés": [
-          "Aucune Nouveauté Apporté"
-        ],
-        "améliorations": [
-          "Aucune Amélioration Apporté"
-        ],
-        "corrections": [
-          "Correction du bug \"Récupérer Mes Stats\" qui ne fonctionner plus."
-        ]
-      }
-    },
-    {
-      "version": "2.5.4",
-      "date": "2026-03-21",
-      "type": "hotfix",
-      "changes": {
-        "nouveautés": [
-          "Aucune nouveauté apporter"
-        ],
-        "améliorations": [
-          "Aucune amélioration apporter"
-        ],
-        "corrections": [
-          "Correction du bug \"Récupérer mes stats\" qui ne fonctionner plus."
-        ]
-      }
-    },
-    {
-      "version": "2.5.4",
-      "date": "2026-03-21",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Aucune nouveauté apporter"
-        ],
-        "améliorations": [
-          "Aucune amélioration apporter"
-        ],
-        "corrections": [
-          "Correction du bug \"Récupérer mes stats\" qui ne fonctionner plus"
-        ]
-      }
-    },
-    {
-      "version": "2.5.4",
-      "date": "2026-03-21",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Aucune nouveauté apporter"
-        ],
-        "améliorations": [
-          "Aucune amélioration apporter"
-        ],
-        "corrections": [
-          "Correction du bug \"Récupérer mes stats\" qui ne fonctionner plus"
-        ]
-      }
-    },
-    {
-      "version": "2.5.4",
+      "version": "2.5.3",
       "date": "2026-03-21",
       "type": "standard",
       "changes": {
@@ -76,23 +12,7 @@
           "Aucune amélioration"
         ],
         "corrections": [
-          "Correction du bug \"Récupérer mes stats\" qui ne fonctionner plus"
-        ]
-      }
-    },
-    {
-      "version": "2.5.2",
-      "date": "2026-03-20",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Ajout de l'onglet coupon pour stocker les coupon MTCGames"
-        ],
-        "améliorations": [
-          "Amélioration du scraping"
-        ],
-        "corrections": [
-          ""
+          "Correction du bouton \"Récupérer mes stats\" qui ne fonctionner plus."
         ]
       }
     }
