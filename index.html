@@ -47,7 +47,32 @@
     const { useState, useEffect, useRef } = React;
 
     const CHANGELOG_URL = 'https://raw.githubusercontent.com/dragonal59/DarkOrbit-Stats-Tracker-Download/master/changelog.json';
-    const DOWNLOAD_PATH = 'https://github.com/dragonal59/DarkOrbit-Stats-Tracker-Download/releases/download/2.5.8/DOStatsTracker-Setup-v2.5.8.exe';
+    const CHANGELOG_LOCAL = './changelog.json';
+    const DOWNLOAD_PATH = 'https://github.com/dragonal59/DarkOrbit-Stats-Tracker-Download/releases/download/2.5.9/DOStatsTracker-Setup-v2.5.9.exe';
+
+    function compareSemverDesc(va, vb) {
+      const a = String(va || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+      const b = String(vb || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+      const len = Math.max(a.length, b.length);
+      for (let i = 0; i < len; i++) {
+        const da = a[i] || 0;
+        const db = b[i] || 0;
+        if (db !== da) return db - da;
+      }
+      return 0;
+    }
+
+    /** Fusionne local + remote GitHub ; même version = remote prioritaire pour le texte. Tri décroissant pour afficher la dernière version en premier (évite 2.5.2 GitHub avant 2.5.8 local). */
+    function mergeChangelogVersions(local, remote) {
+      const r = (local && local.versions) || [];
+      const s = (remote && remote.versions) || [];
+      const byKey = {};
+      r.forEach((e) => { if (e && e.version != null) byKey[String(e.version)] = e; });
+      s.forEach((e) => { if (e && e.version != null) byKey[String(e.version)] = e; });
+      const keys = Object.keys(byKey);
+      keys.sort((ka, kb) => compareSemverDesc(ka, kb));
+      return { versions: keys.map((k) => byKey[k]).filter(Boolean) };
+    }
     const PICTURES_BASE = './pictures/';
 
     const i18n = {
@@ -613,11 +638,14 @@
       }, [lang]);
 
       useEffect(() => {
-        fetch(CHANGELOG_URL)
-          .then(r => r.json())
-          .then(data => {
-            const versions = (data && data.versions) ? data.versions : [];
-            setChangelogVersions(versions);
+        const loadJson = (url) =>
+          fetch(url, { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+        Promise.all([loadJson(CHANGELOG_LOCAL), loadJson(CHANGELOG_URL)])
+          .then(([local, remote]) => {
+            const merged = mergeChangelogVersions(local || { versions: [] }, remote || { versions: [] });
+            setChangelogVersions(merged.versions || []);
           })
           .catch(() => setChangelogVersions([]))
           .finally(() => setChangelogLoading(false));
