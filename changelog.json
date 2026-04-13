@@ -15,54 +15,6 @@
           "Fixed grade points over 24h."
         ]
       }
-    },
-    {
-      "version": "2.5.11",
-      "date": "2026-04-13",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Description de la nouvelle fonctionnalité"
-        ],
-        "améliorations": [
-          "Amélioration des performances et de l'interface"
-        ],
-        "corrections": [
-          "L'app ne se connecter plus au compte utilisateur"
-        ]
-      }
-    },
-    {
-      "version": "2.5.10",
-      "date": "2026-04-13",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Description de la nouvelle fonctionnalité"
-        ],
-        "améliorations": [
-          "Amélioration des performances et de l'interface"
-        ],
-        "corrections": [
-          "Correction d'un bug mineur"
-        ]
-      }
-    },
-    {
-      "version": "2.5.9",
-      "date": "2026-04-10",
-      "type": "standard",
-      "changes": {
-        "nouveautés": [
-          "Description de la nouvelle fonctionnalité"
-        ],
-        "améliorations": [
-          "Amélioration des performances et de l'interface"
-        ],
-        "corrections": [
-          "Correction d'un bug mineur"
-        ]
-      }
     }
   ]
 }
